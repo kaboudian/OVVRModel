@@ -553,13 +553,16 @@ function createGui(){
     .name('recording?').onChange(
         function(){
             env.rec_recorder.setRecordingStatus( env.rec_recording ) ;
+            env.current_recorder.setRecordingStatus( env.rec_recording ) ;
         } ).listen() ;
     env.gui_1.rec.add(env, 'rec_toggleRecording' ).name('toggle') ;
     env.gui_1.rec.add(env, 'rec_interval') .onChange(function(){
         env.rec_recorder.setSampleRate(env.rec_interval) ;
+        env.current_recorder.setSampleRate(env.rec_interval) ;
     } ) ;
     env.gui_1.rec.add(env, 'rec_reset' ).name('reset') ;
     env.gui_1.rec.add(env, 'rec_fileName').name('file name') ;
+    env.gui_1.rec.add(env, 'current_fileName').name('file name for current') ;
     env.gui_1.rec.add(env, 'rec_save' ).name('save') ;
 
 /*------------------------------------------------------------------------
@@ -1080,13 +1083,19 @@ function Environment(){
     this.rec_toggleRecording = function(){
         env.rec_recording = !env.rec_recording ;
         env.rec_recorder.setRecordingStatus(this.recording) ;
+        env.current_recorder.setRecordingStatus(this.recording) ;
+
     } ;
     this.rec_reset = function(){
-        env.rec_recorder.resetRecording(); },
+        env.rec_recorder.resetRecording(); 
+        env.current_recorder.resetRecording(); 
+        
+    },
     this.rec_interval = 10 ;
     this.rec_fileName = 'vlt.dat' ;
     this.rec_save = function(){
         var fileName ;
+        var current_fileName ;
         try{
             fileName = eval(env.rec_fileName) ;
         }catch(e){
@@ -1095,8 +1104,17 @@ function Environment(){
         if ( fileName == undefined ){
             fileName = 'vlt.dat' ;
         }
+
+        try{
+            current_fileName = eval(env.current_fileName) ;
+        }catch(e){
+            current_fileName = "current.dat" ;
+        }
+
         env.rec_recorder.setFileName(fileName) ;
+        env.current_recorder.setFileName(current_fileName) ;
         env.rec_recorder.save() ;
+        env.current_recorder.save() ;
     } ;
 
     /* Increment */
@@ -1736,6 +1754,42 @@ function loadWebGL()
                 recording: env.rec_recording ,
                 fileName : env.rec_fileName} ) ;
 /*------------------------------------------------------------------------
+ * current probe
+ *------------------------------------------------------------------------
+ */
+    env.current_fileName = 'current.dat' ;
+
+    // Choose the chanel you want to record
+    // and choose the texture regarding current 
+    // env.cica.r : ICaL 
+    // env.cica.g : ICaNa
+    // env.cica.b : IpCa
+    // env.cica.a : ICab
+    //
+    // env.cick.r : ICaK
+    // env.cick.g : IKs
+    // env.cick.b : IKr
+    // env.cick.a : IK1
+    //
+    // env.cikn.r : IKb
+    // env.cikn.g : INaK
+    // env.cikn.b : INab
+    // env.cikn.a : INa
+    //
+    // env.cinc.r : INaCa 
+    // env.cinc.g : Ito
+    // env.cinc.b : ISum
+    // env.cinc.a : ISum
+    env.current_probe = new Abubu.Probe( env.cica, { channel : 'r',
+            probePosition : [0.5,0.5] } ) ;
+    env.current_recorder = new Abubu.ProbeRecorder( env.current_probe, 
+        {
+            sampleRate : env.rec_interval ,
+            recording : env.recording ,
+            fileName : env.current_fileName 
+        } ) ;
+
+/*------------------------------------------------------------------------
  * apd solver
  *------------------------------------------------------------------------
  */
@@ -2194,6 +2248,8 @@ env.apdInit = new Abubu.Solver({
                 env.cplt.update(env.time) ;
                 env.disp.updateTipt() ;
                 env.rec_recorder.record(env.time) ;
+                env.current_recorder.record(env.time) ;
+
                 env.intervalCaller.call(env.time) ;
                 env.paceMakerCaller.call(env.time) ;
 
